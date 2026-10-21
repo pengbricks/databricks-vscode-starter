@@ -149,6 +149,20 @@ databricks bundle destroy
 databricks bundle destroy -t prod
 ```
 
+## CI/CD with GitHub Actions
+
+`.github/workflows/ci-cd.yml` runs pytest, Ruff, and a wheel build for every pull request and push to `main`.
+It also provides a manual **Deploy demo bundle** option through **Actions > CI/CD > Run workflow**. Enable
+`deploy_demo` to validate and deploy the `demo` target after the tests pass.
+
+The deploy job uses Databricks workload identity federation instead of a stored access token. Create a GitHub
+environment named `Demo`, set its `DATABRICKS_HOST` variable, and set its `DATABRICKS_CLIENT_ID` secret to the
+Databricks service principal application ID. Configure that service principal with a federation policy whose
+subject is `repo:pengbricks/databricks-vscode-starter:environment:Demo`.
+
+See [GitHub Actions for Databricks](https://docs.databricks.com/dev-tools/ci-cd/github) and
+[workload identity federation](https://docs.databricks.com/dev-tools/auth/oauth-federation-provider/).
+
 Each target picks its own catalog (`dev_sales`, `prod_sales`). To send every command to another catalog, add `--var catalog=<catalog>` or run `export BUNDLE_VAR_catalog=<catalog>` once.
 
 ## Troubleshooting
