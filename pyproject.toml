@@ -24,6 +24,7 @@ dev = [
     # https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
     # https://docs.databricks.com/aws/en/dev-tools/databricks-connect/python/install
     "databricks-connect==18.0.*",
+    "ipykernel>=6.29",
     "pytest>=8",
     "ruff>=0.6",
 ]

@@ -8,7 +8,7 @@ The project holds:
 - `src/notebook.py`: a notebook in Databricks source format that calls the package
 - `scratch/explore.py`: a script to debug with Databricks Connect
 - `tests/`: pytest tests that run on your machine, plus one optional test that uses Databricks Connect
-- `databricks.yml` and `resources/`: a bundle with a `dev` target (the default), a `prod` target, a `demo` target for one catalog you name, a schema, and a job with a notebook task and a Python wheel task
+- `databricks.yml` and `resources/`: a bundle with a `dev` target (the default), a `prod` target, a `demo` target for a literal catalog, a schema, and a job with a notebook task and a Python wheel task
 - `.vscode/`: settings, launch configurations, and extension recommendations
 
 ## Get the project
@@ -80,12 +80,12 @@ GRANT USE CATALOG, CREATE SCHEMA ON CATALOG dev_sales TO `<your-group>`;
 
 To use your own domain, change `sales` in each target.
 
-**Deploy to a catalog verbatim with the `demo` target.** For a sandbox or a shared demo catalog, `demo` writes to exactly the catalog you name. It has no catalog of its own, so validate fails until you pass one, and it has no mode, so nothing gets a prefix: the schema is `<catalog>.vscode_starter` and the job is `vscode-starter-orders`. Two people deploying `demo` to the same catalog share those names.
+**Deploy to a catalog verbatim with the `demo` target.** For a sandbox or a shared demo catalog, `demo` writes to the literal catalog configured in `databricks.yml`. It has no mode, so nothing gets a prefix: the schema is `<catalog>.vscode_starter` and the job is `vscode-starter-orders`. Change the target's literal when the workspace uses another demo catalog. Two people deploying `demo` to the same catalog share those names.
 
 ```bash
-databricks bundle deploy -t demo --var catalog=main
-databricks bundle run capability_guides_vscode_starter -t demo --var catalog=main
-databricks bundle destroy -t demo --var catalog=main
+databricks bundle deploy -t demo
+databricks bundle run capability_guides_vscode_starter -t demo
+databricks bundle destroy -t demo
 ```
 
 To keep the `dev` or `prod` behavior but swap the catalog, override the variable on that target instead: `--var catalog=<catalog>` on one command, or `export BUNDLE_VAR_catalog=<catalog>` for every command in the terminal. In VS Code, set it in the Bundle Variables view. Precedence, highest first: `--var`, `BUNDLE_VAR_catalog`, the target's value, then the variable's default.
@@ -95,7 +95,7 @@ To keep the `dev` or `prod` behavior but swap the catalog, override the variable
 1. **Open the folder.** In VS Code, File > Open Folder and pick `vscode-starter`. Accept the prompt to install the recommended extensions. Click the Databricks icon in the sidebar. The folder has a `databricks.yml`, so the extension treats it as a bundle project.
 2. **Sign in with OAuth.** In the Configuration view, click Auth Type, then the gear icon, and choose OAuth (user to machine). Enter your workspace URL, name the profile, and finish the browser sign-in. The profile goes into your Databricks CLI config file, so the CLI and Databricks Connect reuse it. If a profile for your workspace already exists, pick it instead. To pin the workspace in the bundle, add `workspace: host:` under the `dev` target as the comments in `databricks.yml` show.
 3. **Pick serverless.** Click Select compute and choose Serverless. Check that the target in the Configuration view is `dev`, and note the mode it shows: development.
-4. **Check the catalog.** The `dev` target writes to `dev_sales`. Open the Bundle Variables view to see it. If that catalog does not exist in your workspace, create it (see [Choose the catalogs](#choose-the-catalogs)), set `catalog` there to one that does, or pick the `demo` target and set `catalog` to the exact catalog to use.
+4. **Check the catalog.** The `dev` target writes to `dev_sales`. Open the Bundle Variables view to see it. If that catalog does not exist in your workspace, create it (see [Choose the catalogs](#choose-the-catalogs)), set `catalog` there to one that does, or pick the `demo` target, which uses its configured literal.
 5. **Set up the virtual environment.** In the Configuration view, click Set up Python environment and choose serverless version 5. The extension runs uv, builds `.venv`, and installs a matching `databricks-connect`. This project already pins `databricks-connect==18.0.*` in `pyproject.toml`, the same line the setup resolves for serverless version 5 (it writes `~=18.0.0`). The setup also adds a block of package constraints to `pyproject.toml` and saves a `pyproject.toml.bak`, so diff the two before you commit. Terminal alternative: `uv sync`. When the status bar shows a red Databricks Connect disabled button, click it and follow the prompts until it reads enabled.
 6. **Run a notebook cell.** Open `src/notebook.py`. Each cell has Run Cell, Run Above, and Debug Cell. Run the first cell, then the pandas cell, then the Spark cell. The pandas cell runs on your machine and the Spark cell runs on serverless compute. The last cell asserts that both agree.
 7. **Debug with a breakpoint.** Open `scratch/explore.py` and click in the gutter beside the line `totals = spark_daily_revenue(...)` to set a breakpoint. Click the Run on Databricks icon beside the editor tabs, then Debug current file with Databricks Connect. At the breakpoint, compare `raw` and `cleaned` in the Variables pane, step into `spark_daily_revenue` with F11, and read the printed result in the Debug Console.
@@ -161,9 +161,9 @@ Each target picks its own catalog (`dev_sales`, `prod_sales`). To send every com
 
 **`dbutils` locally.** In a plain `.py` file, `dbutils` is not defined. Notebooks opened in the extension get it, with a subset of utilities. For `dbutils.widgets`, install `databricks-sdk[notebook]`. Outside a notebook, use `WorkspaceClient().dbutils`, which offers only `fs` and `secrets`. This project avoids the problem: the notebook takes no widgets, and the package never calls `dbutils`.
 
-**Deploy fails with a catalog that does not exist.** `dev_sales` or `prod_sales` is missing in this workspace, or you lack `USE CATALOG` on it. Create the catalog, or point the bundle at one you can use: `-t demo --var catalog=<catalog>`, `--var catalog=<catalog>` on any target, `BUNDLE_VAR_catalog`, or the Bundle Variables view.
+**Deploy fails with a catalog that does not exist.** A target's configured catalog is missing in this workspace, or you lack `USE CATALOG` on it. Create the catalog, change the demo target's literal, or point the bundle at one you can use with `--var catalog=<catalog>`, `BUNDLE_VAR_catalog`, or the Bundle Variables view.
 
-**`validate` asks for `catalog`.** The variable has no default. The `demo` target needs `--var catalog=<catalog>`, and a target you add needs its own `catalog` value under `variables:`.
+**`validate` asks for `catalog`.** The variable has no global default, so every target you add needs its own `catalog` value under `variables:` or an external override.
 
 **`uv build` is not found during deploy.** Install uv (<https://docs.astral.sh/uv/>) and restart VS Code so it sees the new PATH.
 

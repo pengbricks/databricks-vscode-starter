@@ -7,7 +7,7 @@
 #   databricks bundle validate                     # dev target, catalog dev_sales
 #   databricks bundle deploy
 #   databricks bundle run capability_guides_vscode_starter
-#   databricks bundle deploy -t demo --var catalog=main   # demo target: exactly this catalog, no prefixes
+#   databricks bundle deploy -t demo                # demo target: literal main catalog, no prefixes
 #
 # Learn more:
 #   What bundles are and how they deploy  https://docs.databricks.com/aws/en/dev-tools/bundles
@@ -46,8 +46,8 @@ sync:
 #
 # Catalogs follow one catalog per environment, named <environment>_<domain> (dev_sales, prod_sales), so
 # each target writes to its own catalog and a dev deploy can never touch prod data. Each target sets its
-# catalog below; change "sales" there to your domain. To use one existing catalog instead (for example
-# main in a sandbox workspace), override it: --var catalog=main or export BUNDLE_VAR_catalog=main.
+# catalog below; change "sales" there to your domain. The demo target uses the literal main catalog for
+# a sandbox workspace. Change that target value or override it with --var catalog=<catalog> when needed.
 # https://docs.databricks.com/aws/en/data-governance/unity-catalog/best-practices
 variables:
   catalog:
@@ -67,8 +67,8 @@ permissions:
 # selector switches between them; on the command line, pass -t <name>.
 #
 # The workspace host comes from your sign-in profile. To pin a target to one workspace, add
-#   workspace:
-#     host: https://<your-workspace-url>
+workspace:
+  host: https://adb-3438839487639471.11.azuredatabricks.net/
 # under it. The extension shows the host and mode of the selected target in its Configuration view.
 # https://docs.databricks.com/aws/en/dev-tools/bundles/deployment-modes
 targets:
@@ -84,11 +84,13 @@ targets:
       tags:
         environment: dev
 
-  # Demo deploys to the exact catalog you name, for a sandbox or a shared demo catalog. It sets no catalog,
-  # so validate fails until you pass one: -t demo --var catalog=<catalog>. It has no mode, so nothing gets
-  # a prefix: the schema is <catalog>.vscode_starter and the job is vscode-starter-orders. Two people
-  # deploying demo to one catalog share those names, so give each their own catalog.
+  # Demo deploys to the literal main catalog for a sandbox or shared demo workspace. It has no mode, so
+  # nothing gets a prefix: the schema is main.vscode_starter and the job is vscode-starter-orders. Change
+  # this literal when the workspace uses another demo catalog. Two people deploying demo to one catalog
+  # share those names, so give each their own catalog.
   demo:
+    variables:
+      catalog: rpeng_sandbox
     presets:
       tags:
         environment: demo
